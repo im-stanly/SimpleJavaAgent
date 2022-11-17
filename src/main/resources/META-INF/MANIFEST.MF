@@ -1,2 +1,3 @@
 Premain-Class: com.cisco.sskiba.Agent
+Agent-Class: com.cisco.sskiba.Agent
 Can-Retransform-Classes: true
