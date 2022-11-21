@@ -41,6 +41,26 @@ public class Agent {
 
         try {
             vm.loadAgent("/Users/sskiba/Desktop/javaProjects/SimpleJavaAgent/target/Agent0-jar-with-dependencies.jar");
+            System.out.println("\n DYNAMIC LOAD WORKS FINE! \n");
+
+            inst.addTransformer(new ClassFileTransformer() {
+                @Override
+                public byte[] transform(Module module,
+                                        ClassLoader loader,
+                                        String name,
+                                        Class<?> typeIfLoaded,
+                                        ProtectionDomain domain,
+                                        byte[] buffer) {
+                    if (typeIfLoaded == null) {
+                        printLoadedClasses(name);
+                    } else {
+                        System.out.println("Class was re-loaded: " + name);
+                    }
+                    return null;
+                }
+            }, true);
+            inst.retransformClasses(
+                    inst.getAllLoadedClasses());
         } catch (AgentLoadException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {
@@ -50,25 +70,6 @@ public class Agent {
         } finally {
             vm.detach();
         }
-
-        inst.addTransformer(new ClassFileTransformer() {
-            @Override
-            public byte[] transform(Module module,
-                                    ClassLoader loader,
-                                    String name,
-                                    Class<?> typeIfLoaded,
-                                    ProtectionDomain domain,
-                                    byte[] buffer) {
-                if (typeIfLoaded == null) {
-                    printLoadedClasses(name);
-                } else {
-                    System.out.println("Class was re-loaded: " + name);
-                }
-                return null;
-            }
-        }, true);
-        inst.retransformClasses(
-                inst.getAllLoadedClasses());
 
     }
 
