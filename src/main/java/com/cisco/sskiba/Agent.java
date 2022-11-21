@@ -13,23 +13,14 @@ import java.lang.management.ManagementFactory;
 import java.security.ProtectionDomain;
 
 public class Agent {
+    private static final String agentAbsolutPath = "/Users/sskiba/Desktop/javaProjects/SimpleJavaAgent/target/Agent0-jar-with-dependencies.jar";
     public static void premain (
             String agentArgs, Instrumentation inst) {
         System.out.println("\n STATIC LOAD WORKS FINE! \n");
 
         //getAllLoadedClasses()
         //getClassPool()
-        inst.addTransformer(new ClassFileTransformer() {
-            @Override
-            public byte[] transform(ClassLoader loader,
-                                    String name,
-                                    Class<?> typeIfLoaded,
-                                    ProtectionDomain domain,
-                                    byte[] buffer) {
-                printLoadedClasses(name);
-                return null; //return null to not transform and just print the most recent loaded class
-            }
-        });
+        printLoadedClasses(inst);
 
     }
     public static void agentmain(
@@ -40,27 +31,11 @@ public class Agent {
         VirtualMachine vm = VirtualMachine.attach(pid);
 
         try {
-            vm.loadAgent("/Users/sskiba/Desktop/javaProjects/SimpleJavaAgent/target/Agent0-jar-with-dependencies.jar");
+            vm.loadAgent(agentAbsolutPath);
             System.out.println("\n DYNAMIC LOAD WORKS FINE! \n");
 
-            inst.addTransformer(new ClassFileTransformer() {
-                @Override
-                public byte[] transform(Module module,
-                                        ClassLoader loader,
-                                        String name,
-                                        Class<?> typeIfLoaded,
-                                        ProtectionDomain domain,
-                                        byte[] buffer) {
-                    if (typeIfLoaded == null) {
-                        printLoadedClasses(name);
-                    } else {
-                        System.out.println("Class was re-loaded: " + name);
-                    }
-                    return null;
-                }
-            }, true);
-            inst.retransformClasses(
-                    inst.getAllLoadedClasses());
+            printLoadedClasses(inst);
+
         } catch (AgentLoadException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {
@@ -73,8 +48,19 @@ public class Agent {
 
     }
 
-    private static void printLoadedClasses(String className){
-        if (className.contains("com/cisco/sskiba") || className.contains("org/springframework"))
-            System.out.println("Class was loaded: " + className);
+    private static void printLoadedClasses(Instrumentation inst){
+        inst.addTransformer(new ClassFileTransformer() {
+            @Override
+            public byte[] transform(ClassLoader loader,
+                                    String name,
+                                    Class<?> typeIfLoaded,
+                                    ProtectionDomain domain,
+                                    byte[] buffer) {
+                if (name.contains("com/cisco/sskiba") || name.contains("org/springframework/http/client/ClientHttpResponse"))
+                    System.out.println("Class was loaded: " + name);
+                return null; //return null to not transform and just print the most recent loaded class
+            }
+        });
+
     }
 }
