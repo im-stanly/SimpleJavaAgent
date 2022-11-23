@@ -69,54 +69,63 @@ public class Agent {
     }
 
     private  static void measureTimeOfProcesses(Instrumentation inst){
-        inst.addTransformer(new ClassFileTransformer() {
-            @Override
-            public byte[] transform(ClassLoader loader,
-                                    String name,
-                                    Class<?> typeIfLoaded,
-                                    ProtectionDomain domain,
-                                    byte[] buffer) {
-                if (name.equals("org/springframework/samples/petclinic/owner")){ // !! CZY PO PROSTU POWINIEN BYC PACKAGE KLASY KTORA CHCE
-                    try {
-                        ClassPool cp = ClassPool.getDefault();
-                        CtClass cc = cp.get("org.springframework.samples.petclinic.owner.OwnerController");
-                        CtMethod m = cc.getDeclaredMethod(
-                                "initFindForm"); // !! CZY PO PROSTU NAZWA METODY KTORA CHCE
-                        m.addLocalVariable(
-                                "startTime", CtClass.longType);
-                        m.insertBefore(
-                                "startTime = System.currentTimeMillis();");
+        if (!inst.isRetransformClassesSupported()){
+            System.out.println("[JAVA AGENT] WE CAN NOT transform THIS CLASSES");
+        } else if (!inst.isRedefineClassesSupported()) {
+            System.out.println("[JAVA AGENT] WE CAN NOT redefine THIS CLASSES");
+        }
+        else {
+            System.out.println("[JAVA AGENT] We can transform and redefine this classes");
+            inst.addTransformer(new ClassFileTransformer() {
+                @Override
+                public byte[] transform(ClassLoader loader,
+                                        String name,
+                                        Class<?> typeIfLoaded,
+                                        ProtectionDomain domain,
+                                        byte[] buffer) {
+                    if (name.equals("org/springframework/samples/petclinic/owner")) { // !! CZY PO PROSTU POWINIEN BYC PACKAGE KLASY KTORA CHCE
 
-                        StringBuilder endBlock = new StringBuilder();
+                        try {
+                            ClassPool cp = ClassPool.getDefault();
+                            CtClass cc = cp.get("org.springframework.samples.petclinic.owner.OwnerController");
+                            CtMethod m = cc.getDeclaredMethod(
+                                    "initFindForm"); // !! CZY PO PROSTU NAZWA METODY KTORA CHCE
+                            m.addLocalVariable(
+                                    "startTime", CtClass.longType);
+                            m.insertBefore(
+                                    "startTime = System.currentTimeMillis();");
 
-                        m.addLocalVariable("endTime", CtClass.longType);
-                        m.addLocalVariable("opTime", CtClass.longType);
-                        endBlock.append(
-                                "endTime = System.currentTimeMillis();");
-                        endBlock.append(
-                                "opTime = (endTime-startTime)/1000;");
-                        endBlock.append(
-                                "System.out.println(\"[JAVA AGENT] NEW OWNER ADDED IN:" +
-                                        "\" + opTime + \" SECONDS!\");");
+                            StringBuilder endBlock = new StringBuilder();
 
-                        m.insertAfter(endBlock.toString());
+                            m.addLocalVariable("endTime", CtClass.longType);
+                            m.addLocalVariable("opTime", CtClass.longType);
+                            endBlock.append(
+                                    "endTime = System.currentTimeMillis();");
+                            endBlock.append(
+                                    "opTime = (endTime-startTime)/1000;");
+                            endBlock.append(
+                                    "System.out.println(\"[JAVA AGENT] NEW OWNER ADDED IN:" +
+                                            "\" + opTime + \" SECONDS!\");");
 
-                        buffer = cc.toBytecode();
-                        cc.detach();
-                    } catch (NotFoundException | CannotCompileException | IOException e) {
-                        e.getMessage();
+                            m.insertAfter(endBlock.toString());
+
+                            buffer = cc.toBytecode();
+                            cc.detach();
+                        } catch (NotFoundException | CannotCompileException | IOException e) {
+                            e.getMessage();
+                            return buffer;
+                        }
                         return buffer;
                     }
-                    return buffer;
+                    return null; //return null to not transform and just print the most recent loaded class
                 }
-                return null; //return null to not transform and just print the most recent loaded class
+            }, true);
+            try {
+                inst.retransformClasses(
+                        inst.getAllLoadedClasses());
+            } catch (UnmodifiableClassException e) {
+                throw new RuntimeException(e);
             }
-        }, true);
-        try {
-            inst.retransformClasses(
-                    inst.getAllLoadedClasses());
-        } catch (UnmodifiableClassException e) {
-            throw new RuntimeException(e);
         }
     }
 }
