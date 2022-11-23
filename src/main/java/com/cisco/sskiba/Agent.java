@@ -37,7 +37,7 @@ public class Agent {
             vm.loadAgent(agentAbsolutPath);
             System.out.println("\n DYNAMIC LOAD WORKS FINE! \n");
 
-            printLoadedClasses(inst);
+            //printLoadedClasses(inst);
 
         } catch (AgentLoadException e) {
             throw new RuntimeException(e);
@@ -76,11 +76,10 @@ public class Agent {
                                     Class<?> typeIfLoaded,
                                     ProtectionDomain domain,
                                     byte[] buffer) {
-
                 if (name.equals("org/springframework/samples/petclinic/owner")){ // !! CZY PO PROSTU POWINIEN BYC PACKAGE KLASY KTORA CHCE
                     try {
                         ClassPool cp = ClassPool.getDefault();
-                        CtClass cc = cp.get("OwnerController"); // !! czy tutuaj po prostu daje nazwe klasy w ktorej bedzie szukana metoda
+                        CtClass cc = cp.get("org.springframework.samples.petclinic.owner.OwnerController");
                         CtMethod m = cc.getDeclaredMethod(
                                 "initFindForm"); // !! CZY PO PROSTU NAZWA METODY KTORA CHCE
                         m.addLocalVariable(
@@ -97,7 +96,7 @@ public class Agent {
                         endBlock.append(
                                 "opTime = (endTime-startTime)/1000;");
                         endBlock.append(
-                                "System.out.println(\"[Application] NEW OWNER ADDED IN:" +
+                                "System.out.println(\"[JAVA AGENT] NEW OWNER ADDED IN:" +
                                         "\" + opTime + \" SECONDS!\");");
 
                         m.insertAfter(endBlock.toString());
@@ -112,6 +111,12 @@ public class Agent {
                 }
                 return null; //return null to not transform and just print the most recent loaded class
             }
-        });
+        }, true);
+        try {
+            inst.retransformClasses(
+                    inst.getAllLoadedClasses());
+        } catch (UnmodifiableClassException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
