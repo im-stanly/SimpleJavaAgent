@@ -22,12 +22,12 @@ public class Agent {
         //getAllLoadedClasses()
         //getClassPool()
 
-        //printLoadedClasses(inst);
+//        printLoadedClasses(inst);
         measureTimeOfProcesses((inst));
 
     }
     public static void agentmain(
-        String agentArgs, Instrumentation inst) throws IOException, UnmodifiableClassException, AttachNotSupportedException {
+        String agentArgs, Instrumentation inst) throws IOException, AttachNotSupportedException {
 
         String nameOfRunningVM = ManagementFactory.getRuntimeMXBean().getName();
         String pid = nameOfRunningVM.substring(0, nameOfRunningVM.indexOf('@'));
@@ -37,13 +37,9 @@ public class Agent {
             vm.loadAgent(agentAbsolutPath);
             System.out.println("\n DYNAMIC LOAD WORKS FINE! \n");
 
-            //printLoadedClasses(inst);
+            printLoadedClasses(inst);
 
-        } catch (AgentLoadException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (AgentInitializationException e) {
+        } catch (AgentLoadException | IOException | AgentInitializationException e) {
             throw new RuntimeException(e);
         } finally {
             vm.detach();
@@ -60,7 +56,7 @@ public class Agent {
                                     ProtectionDomain domain,
                                     byte[] buffer) {
 
-                if (name.contains("com/cisco/sskiba") || name.contains("org/springframework/samples/petclinic"))
+                if (name.contains("com/cisco/sskiba") || name.contains("org/springframework/samples/petclinic/owner"))//   org/springframework/samples/petclinic    com/appdynamics/extensions/network
                     System.out.println("Class was loaded: " + name);
                 return null; //return null to not transform and just print the most recent loaded class
             }
@@ -83,13 +79,12 @@ public class Agent {
                                         Class<?> typeIfLoaded,
                                         ProtectionDomain domain,
                                         byte[] buffer) {
-                    if (name.equals("org/springframework/samples/petclinic/owner")) { // !! CZY PO PROSTU POWINIEN BYC PACKAGE KLASY KTORA CHCE
-
+                    if (name.equals("org/springframework/samples/petclinic/owner")) {
                         try {
                             ClassPool cp = ClassPool.getDefault();
                             CtClass cc = cp.get("org.springframework.samples.petclinic.owner.OwnerController");
                             CtMethod m = cc.getDeclaredMethod(
-                                    "initFindForm"); // !! CZY PO PROSTU NAZWA METODY KTORA CHCE
+                                    "initFindForm");
                             m.addLocalVariable(
                                     "startTime", CtClass.longType);
                             m.insertBefore(
@@ -112,12 +107,12 @@ public class Agent {
                             buffer = cc.toBytecode();
                             cc.detach();
                         } catch (NotFoundException | CannotCompileException | IOException e) {
-                            e.getMessage();
+                            System.out.println(e.getMessage());
                             return buffer;
                         }
-                        return buffer;
+//                        return buffer;
                     }
-                    return null; //return null to not transform and just print the most recent loaded class
+                    return buffer;
                 }
             }, true);
             try {
