@@ -19,12 +19,7 @@ public class Agent {
             String agentArgs, Instrumentation inst) {
         System.out.println("\n STATIC LOAD WORKS FINE! \n");
 
-        //getAllLoadedClasses()
-        //getClassPool()
-
-//        printLoadedClasses(inst);
-        measureTimeOfProcesses((inst));
-
+        measureTimeOfProcesses(inst);
     }
     public static void agentmain(
         String agentArgs, Instrumentation inst) throws IOException, AttachNotSupportedException {
@@ -65,62 +60,6 @@ public class Agent {
     }
 
     private  static void measureTimeOfProcesses(Instrumentation inst){
-        if (!inst.isRetransformClassesSupported()){
-            System.out.println("[JAVA AGENT] WE CAN NOT transform THIS CLASSES");
-        } else if (!inst.isRedefineClassesSupported()) {
-            System.out.println("[JAVA AGENT] WE CAN NOT redefine THIS CLASSES");
-        }
-        else {
-            System.out.println("[JAVA AGENT] We can transform and redefine this classes");
-            inst.addTransformer(new ClassFileTransformer() {
-                @Override
-                public byte[] transform(ClassLoader loader,
-                                        String name,
-                                        Class<?> typeIfLoaded,
-                                        ProtectionDomain domain,
-                                        byte[] buffer) {
-                    if (name.equals("org/springframework/samples/petclinic/owner")) {
-                        try {
-                            ClassPool cp = ClassPool.getDefault();
-                            CtClass cc = cp.get("org.springframework.samples.petclinic.owner.OwnerController");
-                            CtMethod m = cc.getDeclaredMethod(
-                                    "initFindForm");
-                            m.addLocalVariable(
-                                    "startTime", CtClass.longType);
-                            m.insertBefore(
-                                    "startTime = System.currentTimeMillis();");
-
-                            StringBuilder endBlock = new StringBuilder();
-
-                            m.addLocalVariable("endTime", CtClass.longType);
-                            m.addLocalVariable("opTime", CtClass.longType);
-                            endBlock.append(
-                                    "endTime = System.currentTimeMillis();");
-                            endBlock.append(
-                                    "opTime = (endTime-startTime)/1000;");
-                            endBlock.append(
-                                    "System.out.println(\"[JAVA AGENT] NEW OWNER ADDED IN:" +
-                                            "\" + opTime + \" SECONDS!\");");
-
-                            m.insertAfter(endBlock.toString());
-
-                            buffer = cc.toBytecode();
-                            cc.detach();
-                        } catch (NotFoundException | CannotCompileException | IOException e) {
-                            System.out.println(e.getMessage());
-                            return buffer;
-                        }
-//                        return buffer;
-                    }
-                    return buffer;
-                }
-            }, true);
-            try {
-                inst.retransformClasses(
-                        inst.getAllLoadedClasses());
-            } catch (UnmodifiableClassException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        inst.addTransformer(new ClassTransformer());
     }
 }
