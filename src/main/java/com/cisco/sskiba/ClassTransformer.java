@@ -31,8 +31,13 @@ public class ClassTransformer implements ClassFileTransformer {
                 for (CtMethod method : ctMethods){
                     if (hasBody(method) && (
                             method.getName().equals("initCreationForm") ||
+                            method.getName().equals("processFindForm") ||
+                            method.getName().equals("addPaginationModel") ||
+                            method.getName().equals("findPaginatedForOwnersLastName") ||
+                            method.getName().equals("validate") ||
                             method.getName().equals("initFindForm")
                     )) {
+                        System.out.println(" [ TEST ] WE trying to transform methode");
                         transformMethod(method);
                     }
                 }
